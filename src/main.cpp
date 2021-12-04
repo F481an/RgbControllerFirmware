@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoOTA.h>
+#include <NTPClient.h>
 
 #define LED_PIN1 2
 #define LED_PIN2 0
@@ -13,8 +15,12 @@
 
 const char *SSID = "A1-104259";
 const char *PWD = "A46942J6JB";
+const long utcOffsetInSeconds = 3600;
 
 ESP8266WebServer server(80);
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
 Adafruit_NeoPixel Strip_1(NUM_LEDS1, LED_PIN1, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel Strip_2(NUM_LEDS2, LED_PIN2, NEO_GRB + NEO_KHZ800);
@@ -24,11 +30,20 @@ struct color
     byte red = 0;
     byte green = 0;
     byte blue = 0;
-
+    byte mode = 0;
+    byte speed = 0;
 } Strip_1_color, Strip_2_color;
 
-StaticJsonDocument<250> jsonDocument;
-char buffer[250];
+struct DevideData
+{
+    IPAddress ipAddress;
+    int sysTime[4] = {0, 0, 0, 0};
+    int timeStart[3] = {0, 0, 0};
+    int timeStop[3] = {0, 0, 0};
+} Device;
+
+StaticJsonDocument<384> jsonDocument;
+char buffer[384];
 
 void connectToWiFi()
 {
@@ -36,59 +51,74 @@ void connectToWiFi()
     Serial.println(SSID);
 
     WiFi.begin(SSID, PWD);
-
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(500);
-        // we can even make the ESP32 to sleep
+        delay(100);
     }
-
     Serial.print("Connected. IP: ");
     Serial.println(WiFi.localIP());
 }
 
-void add_json_object(char *tag, float value)
+void add_json_object(char *tag, byte *value)
 {
-    JsonObject obj = jsonDocument.createNestedObject();
-    obj["type"] = tag;
-    obj["value"] = value;
+    jsonDocument[tag] = value;
+}
+void add_json_object(char *tag, IPAddress value)
+{
+    jsonDocument[tag] = value;
+}
+void add_json_object_Array(char *tag, byte sice, int *value)
+{
+    JsonArray arr = jsonDocument.createNestedArray(tag);
+
+    for (byte i = 0; i < sice; i++)
+    {
+        arr.add(value[i]);
+    }
 }
 
 void setStrip1()
 {
-    if (server.hasArg("plain") == false)
-    {
-        // handle error here
-    }
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
-
     // Get RGB components
     Strip_1_color.red = jsonDocument["red"];
     Strip_1_color.green = jsonDocument["green"];
     Strip_1_color.blue = jsonDocument["blue"];
+    Strip_1_color.mode = jsonDocument["mode"];
+    Strip_1_color.speed = jsonDocument["speed"];
     Strip_1.fill(Strip_1.Color(Strip_1_color.red, Strip_1_color.green, Strip_1_color.blue));
     Strip_1.show();
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
-
 void setStrip2()
 {
-    if (server.hasArg("plain") == false)
-    {
-        // handle error here
-    }
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
-
     // Get RGB components
     Strip_2_color.red = jsonDocument["red"];
     Strip_2_color.green = jsonDocument["green"];
     Strip_2_color.blue = jsonDocument["blue"];
+    Strip_2_color.mode = jsonDocument["mode"];
+    Strip_2_color.speed = jsonDocument["speed"];
     Strip_2.fill(Strip_2.Color(Strip_2_color.red, Strip_2_color.green, Strip_2_color.blue));
     Strip_2.show();
+    // Respond to the client
+    server.send(200, "application/json", "{}");
+}
+void setDevideData()
+{
+    String body = server.arg("plain");
+    deserializeJson(jsonDocument, body);
+
+    Device.timeStart[0] = jsonDocument["TimeStart"][0];
+    Device.timeStart[1] = jsonDocument["TimeStart"][1];
+    Device.timeStart[2] = jsonDocument["TimeStart"][2];
+    Device.timeStop[0] = jsonDocument["TimeStop"][0];
+    Device.timeStop[1] = jsonDocument["TimeStop"][1];
+    Device.timeStop[2] = jsonDocument["TimeStop"][2];
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -99,6 +129,8 @@ void getStrip1()
     add_json_object("red", Strip_1_color.red);
     add_json_object("green", Strip_1_color.green);
     add_json_object("blue", Strip_1_color.blue);
+    add_json_object("mode", Strip_1_color.mode);
+    add_json_object("speed", Strip_1_color.speed);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
@@ -108,16 +140,30 @@ void getStrip2()
     add_json_object("red", Strip_2_color.red);
     add_json_object("green", Strip_2_color.green);
     add_json_object("blue", Strip_2_color.blue);
+    add_json_object("mode", Strip_2_color.mode);
+    add_json_object("speed", Strip_2_color.speed);
+    serializeJson(jsonDocument, buffer);
+    server.send(200, "application/json", buffer);
+}
+void getDevideData()
+{
+    jsonDocument.clear();
+    add_json_object("IP", WiFi.localIP());
+    add_json_object_Array("SysTime", 4, Device.sysTime);
+    add_json_object_Array("TimeStart", 3, Device.timeStart);
+    add_json_object_Array("TimeStop", 3, Device.timeStop);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
 
 void setup_routing()
 {
-    server.on("/GETStrip1", HTTP_GET, getStrip1);
     server.on("/SETStrip1", HTTP_POST, setStrip1);
-    server.on("/GETStrip2", HTTP_GET, getStrip2);
     server.on("/SETStrip2", HTTP_POST, setStrip2);
+    server.on("/SETDevideData", HTTP_POST, setDevideData);
+    server.on("/GETStrip1", HTTP_GET, getStrip1);
+    server.on("/GETStrip2", HTTP_GET, getStrip2);
+    server.on("/GETDevideData", HTTP_GET, getDevideData);
     server.begin();
 }
 
@@ -131,10 +177,19 @@ void setup()
 
     Strip_1.begin();
     Strip_2.begin();
+    Strip_1.fill(Strip_1.Color(0, 0, 0));
+    Strip_1.show();
+    Strip_2.fill(Strip_2.Color(0, 0, 0));
+    Strip_2.show();
 }
 
 void loop()
 {
     server.handleClient();
     ArduinoOTA.handle();
+    timeClient.update();
+    Device.sysTime[0] = timeClient.getDay();
+    Device.sysTime[1] = timeClient.getHours();
+    Device.sysTime[2] = timeClient.getMinutes();
+    Device.sysTime[3] = timeClient.getSeconds();
 }
