@@ -32,6 +32,7 @@ struct color
     byte blue = 0;
     byte mode = 0;
     byte speed = 0;
+    bool state = false;
 } Strip_1_color, Strip_2_color;
 
 struct DevideData
@@ -60,7 +61,7 @@ void connectToWiFi()
     Serial.println(WiFi.localIP());
 }
 
-void add_json_object(char *tag, byte *value)
+void add_json_object(char *tag, byte value)
 {
     jsonDocument[tag] = value;
 }
@@ -83,13 +84,30 @@ void setStrip1()
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
     // Get RGB components
-    Strip_1_color.red = jsonDocument["red"];
-    Strip_1_color.green = jsonDocument["green"];
-    Strip_1_color.blue = jsonDocument["blue"];
-    Strip_1_color.mode = jsonDocument["mode"];
-    Strip_1_color.speed = jsonDocument["speed"];
-    Strip_1.fill(Strip_1.Color(Strip_1_color.red, Strip_1_color.green, Strip_1_color.blue));
-    Strip_1.show();
+    if (jsonDocument.containsKey("red"))
+    {
+        Strip_1_color.red = jsonDocument["red"];
+    }
+    if (jsonDocument.containsKey("green"))
+    {
+        Strip_1_color.green = jsonDocument["green"];
+    }
+    if (jsonDocument.containsKey("blue"))
+    {
+        Strip_1_color.blue = jsonDocument["blue"];
+    }
+    if (jsonDocument.containsKey("mode"))
+    {
+        Strip_1_color.mode = jsonDocument["mode"];
+    }
+    if (jsonDocument.containsKey("speed"))
+    {
+        Strip_1_color.speed = jsonDocument["speed"];
+    }
+    if (jsonDocument.containsKey("state"))
+    {
+        Strip_1_color.state = jsonDocument["state"];
+    }
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -98,13 +116,30 @@ void setStrip2()
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
     // Get RGB components
-    Strip_2_color.red = jsonDocument["red"];
-    Strip_2_color.green = jsonDocument["green"];
-    Strip_2_color.blue = jsonDocument["blue"];
-    Strip_2_color.mode = jsonDocument["mode"];
-    Strip_2_color.speed = jsonDocument["speed"];
-    Strip_2.fill(Strip_2.Color(Strip_2_color.red, Strip_2_color.green, Strip_2_color.blue));
-    Strip_2.show();
+    if (jsonDocument.containsKey("red"))
+    {
+        Strip_2_color.red = jsonDocument["red"];
+    }
+    if (jsonDocument.containsKey("green"))
+    {
+        Strip_2_color.green = jsonDocument["green"];
+    }
+    if (jsonDocument.containsKey("blue"))
+    {
+        Strip_2_color.blue = jsonDocument["blue"];
+    }
+    if (jsonDocument.containsKey("mode"))
+    {
+        Strip_2_color.mode = jsonDocument["mode"];
+    }
+    if (jsonDocument.containsKey("speed"))
+    {
+        Strip_2_color.speed = jsonDocument["speed"];
+    }
+    if (jsonDocument.containsKey("state"))
+    {
+        Strip_2_color.state = jsonDocument["state"];
+    }
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -131,6 +166,7 @@ void getStrip1()
     add_json_object("blue", Strip_1_color.blue);
     add_json_object("mode", Strip_1_color.mode);
     add_json_object("speed", Strip_1_color.speed);
+    add_json_object("state", Strip_1_color.state);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
@@ -142,6 +178,7 @@ void getStrip2()
     add_json_object("blue", Strip_2_color.blue);
     add_json_object("mode", Strip_2_color.mode);
     add_json_object("speed", Strip_2_color.speed);
+    add_json_object("state", Strip_2_color.state);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
@@ -167,6 +204,35 @@ void setup_routing()
     server.begin();
 }
 
+void handleAutomaticTurnOnOf()
+{
+}
+
+void handleOnOff()
+{
+    if (Strip_1_color.state)
+    {
+        Strip_1.fill(Strip_1.Color(Strip_1_color.red, Strip_1_color.green, Strip_1_color.blue));
+        Strip_1.show();
+    }
+    else
+    {
+        Strip_1.fill(Strip_1.Color(0, 0, 0));
+        Strip_1.show();
+    }
+
+    if (Strip_2_color.state)
+    {
+        Strip_2.fill(Strip_2.Color(Strip_2_color.red, Strip_2_color.green, Strip_2_color.blue));
+        Strip_2.show();
+    }
+    else
+    {
+        Strip_2.fill(Strip_2.Color(0, 0, 0));
+        Strip_2.show();
+    }
+}
+
 void setup()
 {
     Serial.begin(9600);
@@ -188,6 +254,8 @@ void loop()
     server.handleClient();
     ArduinoOTA.handle();
     timeClient.update();
+    handleAutomaticTurnOnOf();
+    handleOnOff();
     Device.sysTime[0] = timeClient.getDay();
     Device.sysTime[1] = timeClient.getHours();
     Device.sysTime[2] = timeClient.getMinutes();
