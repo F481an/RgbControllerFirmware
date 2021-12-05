@@ -13,14 +13,17 @@
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
 
-const char *SSID = "A1-104259";
-const char *PWD = "A46942J6JB";
+const char SSID[] = "A1-104259";
+const char PWD[] = "A46942J6JB";
 const long utcOffsetInSeconds = 3600;
 
 ESP8266WebServer server(80);
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+
+StaticJsonDocument<384> jsonDocument;
+char buffer[384];
 
 Adafruit_NeoPixel Strip_1(NUM_LEDS1, LED_PIN1, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel Strip_2(NUM_LEDS2, LED_PIN2, NEO_GRB + NEO_KHZ800);
@@ -38,13 +41,10 @@ struct color
 struct DevideData
 {
     IPAddress ipAddress;
-    int sysTime[4] = {0, 0, 0, 0};
-    int timeStart[3] = {0, 0, 0};
-    int timeStop[3] = {0, 0, 0};
+    byte sysTime[4] = {0, 0, 0, 0};
+    byte timeStart[3] = {0, 0, 0};
+    byte timeStop[3] = {0, 0, 0};
 } Device;
-
-StaticJsonDocument<384> jsonDocument;
-char buffer[384];
 
 void connectToWiFi()
 {
@@ -69,7 +69,11 @@ void add_json_object(char *tag, IPAddress value)
 {
     jsonDocument[tag] = value;
 }
-void add_json_object_Array(char *tag, byte sice, int *value)
+void add_json_object(char *tag, const char *value)
+{
+    jsonDocument[tag] = value;
+}
+void add_json_object_Array(char *tag, byte sice, byte *value)
 {
     JsonArray arr = jsonDocument.createNestedArray(tag);
 
@@ -186,6 +190,9 @@ void getDevideData()
 {
     jsonDocument.clear();
     add_json_object("IP", WiFi.localIP());
+    add_json_object("WifiSSID", SSID);
+    add_json_object("WifiPWD", PWD);
+
     add_json_object_Array("SysTime", 4, Device.sysTime);
     add_json_object_Array("TimeStart", 3, Device.timeStart);
     add_json_object_Array("TimeStop", 3, Device.timeStop);
@@ -202,10 +209,6 @@ void setup_routing()
     server.on("/GETStrip2", HTTP_GET, getStrip2);
     server.on("/GETDevideData", HTTP_GET, getDevideData);
     server.begin();
-}
-
-void handleAutomaticTurnOnOf()
-{
 }
 
 void handleOnOff()
@@ -231,6 +234,22 @@ void handleOnOff()
         Strip_2.fill(Strip_2.Color(0, 0, 0));
         Strip_2.show();
     }
+}
+
+void handleAutomaticTurnOnOf()
+{
+    // TODO start and stop on time
+}
+
+void loadEEprom()
+{
+    // TODO Load wifi data from eeprom
+    // TODO Load automatic start and stop time
+}
+void writeEEprom()
+{
+    // TODO Write wifi data to eeprom
+    // TODO Write automatic start and stop time
 }
 
 void setup()
