@@ -13,6 +13,11 @@
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
 
+#define Day 0
+#define Hour 1
+#define Minute 2
+#define Second 3
+
 const char SSID[] = "A1-104259";
 const char PWD[] = "A46942J6JB";
 const long utcOffsetInSeconds = 3600;
@@ -28,6 +33,8 @@ char buffer[384];
 Adafruit_NeoPixel Strip_1(NUM_LEDS1, LED_PIN1, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel Strip_2(NUM_LEDS2, LED_PIN2, NEO_GRB + NEO_KHZ800);
 
+bool manualyTurnedOn = false;
+
 struct color
 {
     byte red = 0;
@@ -42,8 +49,8 @@ struct DevideData
 {
     IPAddress ipAddress;
     byte sysTime[4] = {0, 0, 0, 0};
-    byte timeStart[3] = {0, 0, 0};
-    byte timeStop[3] = {0, 0, 0};
+    byte timeStart[4] = {0, 0, 0, 0};
+    byte timeStop[4] = {0, 0, 0, 0};
 } Device;
 
 void connectToWiFi()
@@ -112,6 +119,7 @@ void setStrip1()
     {
         Strip_1_color.state = jsonDocument["state"];
     }
+    manualyTurnedOn = true;
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -144,6 +152,7 @@ void setStrip2()
     {
         Strip_2_color.state = jsonDocument["state"];
     }
+    manualyTurnedOn = true;
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -152,12 +161,12 @@ void setDevideData()
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
 
-    Device.timeStart[0] = jsonDocument["TimeStart"][0];
-    Device.timeStart[1] = jsonDocument["TimeStart"][1];
-    Device.timeStart[2] = jsonDocument["TimeStart"][2];
-    Device.timeStop[0] = jsonDocument["TimeStop"][0];
-    Device.timeStop[1] = jsonDocument["TimeStop"][1];
-    Device.timeStop[2] = jsonDocument["TimeStop"][2];
+    Device.timeStart[Hour] = jsonDocument["TimeStart"][0];
+    Device.timeStart[Minute] = jsonDocument["TimeStart"][1];
+    Device.timeStart[Second] = jsonDocument["TimeStart"][2];
+    Device.timeStop[Hour] = jsonDocument["TimeStop"][0];
+    Device.timeStop[Minute] = jsonDocument["TimeStop"][1];
+    Device.timeStop[Second] = jsonDocument["TimeStop"][2];
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -194,8 +203,8 @@ void getDevideData()
     add_json_object("WifiPWD", PWD);
 
     add_json_object_Array("SysTime", 4, Device.sysTime);
-    add_json_object_Array("TimeStart", 3, Device.timeStart);
-    add_json_object_Array("TimeStop", 3, Device.timeStop);
+    add_json_object_Array("TimeStart", 4, Device.timeStart);
+    add_json_object_Array("TimeStop", 4, Device.timeStop);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
@@ -238,7 +247,21 @@ void handleOnOff()
 
 void handleAutomaticTurnOnOf()
 {
-    // TODO start and stop on time
+    bool OnEnable = (Device.sysTime[Hour] >= Device.timeStart[Hour]) && (Device.sysTime[Minute] >= Device.timeStart[Minute]) && (Device.sysTime[Second] >= Device.timeStart[Second]);
+    bool OffEnable = (Device.sysTime[Hour] >= Device.timeStop[Hour]) && (Device.sysTime[Minute] >= Device.timeStop[Minute]) && (Device.sysTime[Second] >= Device.timeStop[Second]);
+
+    if (OnEnable && !OffEnable)
+    {
+        Strip_1_color.state = true;
+        Strip_2_color.state = true;
+        manualyTurnedOn = false;
+    }
+
+    if (OffEnable && !manualyTurnedOn)
+    {
+        Strip_1_color.state = false;
+        Strip_2_color.state = false;
+    }
 }
 
 void loadEEprom()
@@ -275,8 +298,8 @@ void loop()
     timeClient.update();
     handleAutomaticTurnOnOf();
     handleOnOff();
-    Device.sysTime[0] = timeClient.getDay();
-    Device.sysTime[1] = timeClient.getHours();
-    Device.sysTime[2] = timeClient.getMinutes();
-    Device.sysTime[3] = timeClient.getSeconds();
+    Device.sysTime[Day] = timeClient.getDay();
+    Device.sysTime[Hour] = timeClient.getHours();
+    Device.sysTime[Minute] = timeClient.getMinutes();
+    Device.sysTime[Second] = timeClient.getSeconds();
 }
