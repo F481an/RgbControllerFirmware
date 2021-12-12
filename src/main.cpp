@@ -18,9 +18,15 @@
 #define Minute 2
 #define Second 3
 
-const char SSID[] = "A1-104259";
-const char PWD[] = "A46942J6JB";
+const char SSID[] = "Klaffenboeck_Wifi";
+const char PWD[] = "31862025034211431218";
 const long utcOffsetInSeconds = 3600;
+
+IPAddress local_IP(192, 168, 188, 130);
+IPAddress gateway(192, 168, 188, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress primaryDNS(8, 8, 8, 8);   // optional
+IPAddress secondaryDNS(8, 8, 4, 4); // optional
 
 ESP8266WebServer server(80);
 
@@ -55,6 +61,11 @@ struct DevideData
 
 void connectToWiFi()
 {
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+    {
+        Serial.println("STA Failed to configure");
+    }
+
     Serial.print("Connecting to ");
     Serial.println(SSID);
 
@@ -64,7 +75,8 @@ void connectToWiFi()
         Serial.print(".");
         delay(100);
     }
-    Serial.print("Connected. IP: ");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
 }
 
