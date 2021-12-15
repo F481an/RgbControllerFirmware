@@ -9,7 +9,7 @@
 
 #define LED_PIN1 2
 #define LED_PIN2 0
-#define NUM_LEDS1 4
+#define NUM_LEDS1 36
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
 
