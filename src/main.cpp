@@ -25,8 +25,8 @@ const long utcOffsetInSeconds = 3600;
 IPAddress local_IP(192, 168, 188, 130);
 IPAddress gateway(192, 168, 188, 1);
 IPAddress subnet(255, 255, 255, 0);
-IPAddress primaryDNS(8, 8, 8, 8);   // optional
-IPAddress secondaryDNS(8, 8, 4, 4); // optional
+IPAddress primaryDNS(192, 168, 188, 103);
+
 
 ESP8266WebServer server(80);
 
@@ -41,7 +41,7 @@ Adafruit_NeoPixel Strip_2(NUM_LEDS2, LED_PIN2, NEO_GRB + NEO_KHZ800);
 
 bool manualyTurnedOn = false;
 
-struct color
+struct LedStrip
 {
     byte red = 0;
     byte green = 0;
@@ -49,7 +49,7 @@ struct color
     byte mode = 0;
     byte speed = 0;
     bool state = false;
-} Strip_1_color, Strip_2_color;
+} Strip_1_data, Strip_2_data;
 
 struct DevideData
 {
@@ -61,7 +61,7 @@ struct DevideData
 
 void connectToWiFi()
 {
-    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS))
     {
         Serial.println("STA Failed to configure");
     }
@@ -84,14 +84,6 @@ void add_json_object(char *tag, byte value)
 {
     jsonDocument[tag] = value;
 }
-void add_json_object(char *tag, IPAddress value)
-{
-    jsonDocument[tag] = value;
-}
-void add_json_object(char *tag, const char *value)
-{
-    jsonDocument[tag] = value;
-}
 void add_json_object_Array(char *tag, byte sice, byte *value)
 {
     JsonArray arr = jsonDocument.createNestedArray(tag);
@@ -109,29 +101,32 @@ void setStrip1()
     // Get RGB components
     if (jsonDocument.containsKey("red"))
     {
-        Strip_1_color.red = jsonDocument["red"];
+        Strip_1_data.red = jsonDocument["red"];
     }
     if (jsonDocument.containsKey("green"))
     {
-        Strip_1_color.green = jsonDocument["green"];
+        Strip_1_data.green = jsonDocument["green"];
     }
     if (jsonDocument.containsKey("blue"))
     {
-        Strip_1_color.blue = jsonDocument["blue"];
+        Strip_1_data.blue = jsonDocument["blue"];
     }
     if (jsonDocument.containsKey("mode"))
     {
-        Strip_1_color.mode = jsonDocument["mode"];
+        Strip_1_data.mode = jsonDocument["mode"];
     }
     if (jsonDocument.containsKey("speed"))
     {
-        Strip_1_color.speed = jsonDocument["speed"];
+        Strip_1_data.speed = jsonDocument["speed"];
     }
     if (jsonDocument.containsKey("state"))
     {
-        Strip_1_color.state = jsonDocument["state"];
+        Strip_1_data.state = jsonDocument["state"];
+        if (Strip_1_data.state)
+        {
+            manualyTurnedOn = true;
+        }
     }
-    manualyTurnedOn = true;
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -142,29 +137,32 @@ void setStrip2()
     // Get RGB components
     if (jsonDocument.containsKey("red"))
     {
-        Strip_2_color.red = jsonDocument["red"];
+        Strip_2_data.red = jsonDocument["red"];
     }
     if (jsonDocument.containsKey("green"))
     {
-        Strip_2_color.green = jsonDocument["green"];
+        Strip_2_data.green = jsonDocument["green"];
     }
     if (jsonDocument.containsKey("blue"))
     {
-        Strip_2_color.blue = jsonDocument["blue"];
+        Strip_2_data.blue = jsonDocument["blue"];
     }
     if (jsonDocument.containsKey("mode"))
     {
-        Strip_2_color.mode = jsonDocument["mode"];
+        Strip_2_data.mode = jsonDocument["mode"];
     }
     if (jsonDocument.containsKey("speed"))
     {
-        Strip_2_color.speed = jsonDocument["speed"];
+        Strip_2_data.speed = jsonDocument["speed"];
     }
     if (jsonDocument.containsKey("state"))
     {
-        Strip_2_color.state = jsonDocument["state"];
+        Strip_2_data.state = jsonDocument["state"];
+        if (Strip_2_data.state)
+        {
+            manualyTurnedOn = true;
+        }
     }
-    manualyTurnedOn = true;
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -186,33 +184,33 @@ void setDevideData()
 void getStrip1()
 {
     jsonDocument.clear();
-    add_json_object("red", Strip_1_color.red);
-    add_json_object("green", Strip_1_color.green);
-    add_json_object("blue", Strip_1_color.blue);
-    add_json_object("mode", Strip_1_color.mode);
-    add_json_object("speed", Strip_1_color.speed);
-    add_json_object("state", Strip_1_color.state);
+    add_json_object("red", Strip_1_data.red);
+    add_json_object("green", Strip_1_data.green);
+    add_json_object("blue", Strip_1_data.blue);
+    add_json_object("mode", Strip_1_data.mode);
+    add_json_object("speed", Strip_1_data.speed);
+    add_json_object("state", Strip_1_data.state);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
 void getStrip2()
 {
     jsonDocument.clear();
-    add_json_object("red", Strip_2_color.red);
-    add_json_object("green", Strip_2_color.green);
-    add_json_object("blue", Strip_2_color.blue);
-    add_json_object("mode", Strip_2_color.mode);
-    add_json_object("speed", Strip_2_color.speed);
-    add_json_object("state", Strip_2_color.state);
+    add_json_object("red", Strip_2_data.red);
+    add_json_object("green", Strip_2_data.green);
+    add_json_object("blue", Strip_2_data.blue);
+    add_json_object("mode", Strip_2_data.mode);
+    add_json_object("speed", Strip_2_data.speed);
+    add_json_object("state", Strip_2_data.state);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
 void getDevideData()
 {
     jsonDocument.clear();
-    add_json_object("IP", WiFi.localIP());
-    add_json_object("WifiSSID", SSID);
-    add_json_object("WifiPWD", PWD);
+    jsonDocument["IP"] = WiFi.localIP();
+    jsonDocument["WifiSSID"] = SSID;
+    jsonDocument["WifiPWD"] = PWD;
 
     add_json_object_Array("SysTime", 4, Device.sysTime);
     add_json_object_Array("TimeStart", 4, Device.timeStart);
@@ -223,20 +221,20 @@ void getDevideData()
 
 void setup_routing()
 {
-    server.on("/SETStrip1", HTTP_POST, setStrip1);
-    server.on("/SETStrip2", HTTP_POST, setStrip2);
-    server.on("/SETDevideData", HTTP_POST, setDevideData);
-    server.on("/GETStrip1", HTTP_GET, getStrip1);
-    server.on("/GETStrip2", HTTP_GET, getStrip2);
-    server.on("/GETDevideData", HTTP_GET, getDevideData);
+    server.on("/Strip1", HTTP_POST, setStrip1);
+    server.on("/Strip2", HTTP_POST, setStrip2);
+    server.on("/DevideData", HTTP_POST, setDevideData);
+    server.on("/Strip1", HTTP_GET, getStrip1);
+    server.on("/Strip2", HTTP_GET, getStrip2);
+    server.on("/DevideData", HTTP_GET, getDevideData);
     server.begin();
 }
 
-void handleOnOff()
+void handleLEDs()
 {
-    if (Strip_1_color.state)
+    if (Strip_1_data.state)
     {
-        Strip_1.fill(Strip_1.Color(Strip_1_color.red, Strip_1_color.green, Strip_1_color.blue));
+        Strip_1.fill(Strip_1.Color(Strip_1_data.red, Strip_1_data.green, Strip_1_data.blue));
         Strip_1.show();
     }
     else
@@ -245,9 +243,9 @@ void handleOnOff()
         Strip_1.show();
     }
 
-    if (Strip_2_color.state)
+    if (Strip_2_data.state)
     {
-        Strip_2.fill(Strip_2.Color(Strip_2_color.red, Strip_2_color.green, Strip_2_color.blue));
+        Strip_2.fill(Strip_2.Color(Strip_2_data.red, Strip_2_data.green, Strip_2_data.blue));
         Strip_2.show();
     }
     else
@@ -264,15 +262,15 @@ void handleAutomaticTurnOnOf()
 
     if (OnEnable && !OffEnable)
     {
-        Strip_1_color.state = true;
-        Strip_2_color.state = true;
+        Strip_1_data.state = true;
+        Strip_2_data.state = true;
         manualyTurnedOn = false;
     }
 
     if (OffEnable && !manualyTurnedOn)
     {
-        Strip_1_color.state = false;
-        Strip_2_color.state = false;
+        Strip_1_data.state = false;
+        Strip_2_data.state = false;
     }
 }
 
@@ -308,8 +306,8 @@ void loop()
     server.handleClient();
     ArduinoOTA.handle();
     timeClient.update();
-    handleAutomaticTurnOnOf();
-    handleOnOff();
+    // handleAutomaticTurnOnOf();
+    handleLEDs();
     Device.sysTime[Day] = timeClient.getDay();
     Device.sysTime[Hour] = timeClient.getHours();
     Device.sysTime[Minute] = timeClient.getMinutes();
