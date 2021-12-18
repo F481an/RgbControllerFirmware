@@ -163,9 +163,9 @@ void getDevideData()
 
 void setup_routing()
 {
-    server.on("/Strip1.color", HTTP_POST, setStrip1);
-    server.on("/Strip1.SpecialMode", HTTP_POST, setStrip1SpecialMode);
-    server.on("/Strip1.OffOn", HTTP_POST, setStrip1OffOn);
+    server.on("/Strip1/color", HTTP_POST, setStrip1);
+    server.on("/Strip1/SpecialMode", HTTP_POST, setStrip1SpecialMode);
+    server.on("/Strip1/OffOn", HTTP_POST, setStrip1OffOn);
     server.on("/Strip1", HTTP_GET, getStrip1);
     server.on("/DevideData", HTTP_POST, setDevideData);
     server.on("/DevideData", HTTP_GET, getDevideData);
