@@ -13,11 +13,6 @@
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
 
-#define Day 0
-#define Hour 1
-#define Minute 2
-#define Second 3
-
 const char SSID[] = "Klaffenboeck_Wifi";
 const char PWD[] = "31862025034211431218";
 
@@ -26,19 +21,15 @@ IPAddress gateway(192, 168, 188, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(192, 168, 188, 103);
 
-LedStrip Strip1(NUM_LEDS1, LED_PIN1);
-
 ESP8266WebServer server(80);
-
 StaticJsonDocument<384> jsonDocument;
 char buffer[384];
+
+LedStrip Strip1(NUM_LEDS1, LED_PIN1);
 
 struct DevideData
 {
     IPAddress ipAddress;
-    byte sysTime[4] = {0, 0, 0, 0};
-    byte timeStart[4] = {0, 0, 0, 0};
-    byte timeStop[4] = {0, 0, 0, 0};
 } Device;
 
 void connectToWiFi()
@@ -104,7 +95,6 @@ void setStrip1SpecialMode()
     deserializeJson(jsonDocument, body);
     byte mode = jsonDocument["mode"];
     byte speed = jsonDocument["speed"];
-    byte state = jsonDocument["state"];
 
     Strip1.setSpecialMode(mode, speed);
     server.send(200, "application/json", "{}");
@@ -138,12 +128,6 @@ void setDevideData()
     String body = server.arg("plain");
     deserializeJson(jsonDocument, body);
 
-    Device.timeStart[Hour] = jsonDocument["TimeStart"][0];
-    Device.timeStart[Minute] = jsonDocument["TimeStart"][1];
-    Device.timeStart[Second] = jsonDocument["TimeStart"][2];
-    Device.timeStop[Hour] = jsonDocument["TimeStop"][0];
-    Device.timeStop[Minute] = jsonDocument["TimeStop"][1];
-    Device.timeStop[Second] = jsonDocument["TimeStop"][2];
     // Respond to the client
     server.send(200, "application/json", "{}");
 }
@@ -154,9 +138,6 @@ void getDevideData()
     jsonDocument["WifiSSID"] = SSID;
     jsonDocument["WifiPWD"] = PWD;
 
-    add_json_object_Array("SysTime", 4, Device.sysTime);
-    add_json_object_Array("TimeStart", 4, Device.timeStart);
-    add_json_object_Array("TimeStop", 4, Device.timeStop);
     serializeJson(jsonDocument, buffer);
     server.send(200, "application/json", buffer);
 }
