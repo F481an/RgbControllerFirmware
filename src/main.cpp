@@ -4,7 +4,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
-#include <NTPClient.h>
+#include <PubSubClient.h>
 #include "LEDsHandler.cpp"
 
 #define LED_PIN1 2
@@ -13,8 +13,15 @@
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
 
+// WiFi
 const char SSID[] = "Klaffenboeck_Wifi";
 const char PWD[] = "31862025034211431218";
+
+// MQTT Broker
+const char *mqttServer = "192.168.188.103";
+const int mqttPort = 1883;
+const char *mqttUser = "";
+const char *mqttPassword = "";
 
 IPAddress local_IP(192, 168, 188, 130);
 IPAddress gateway(192, 168, 188, 1);
@@ -22,15 +29,13 @@ IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(192, 168, 188, 103);
 
 ESP8266WebServer server(80);
+WiFiClient espClient;
+PubSubClient client(espClient);
+
 StaticJsonDocument<384> jsonDocument;
 char buffer[384];
 
 LedStrip Strip1(NUM_LEDS1, LED_PIN1);
-
-struct DevideData
-{
-    IPAddress ipAddress;
-} Device;
 
 void connectToWiFi()
 {
@@ -153,17 +158,57 @@ void setup_routing()
     server.begin();
 }
 
+void callback(char *topic, byte *payload, unsigned int length)
+{
+    Serial.print("Message arrived in topic: ");
+    Serial.println(topic);
+
+    Serial.print("Message:");
+    for (int i = 0; i < length; i++)
+    {
+        Serial.print((char)payload[i]);
+    }
+
+    Serial.println();
+}
+
+void connectToMqttServer()
+{
+    client.setServer(mqttServer, mqttPort);
+    client.setCallback(callback);
+
+    while (!client.connected())
+    {
+        Serial.println("Connecting to MQTT...");
+
+        if (client.connect("ESP8266Client", mqttUser, mqttPassword))
+        {
+            Serial.println("connected");
+        }
+        else
+        {
+            Serial.print("failed with state ");
+            Serial.print(client.state());
+            delay(2000);
+        }
+    }
+
+    client.publish("esp/test", "hello"); // Topic name
+    client.subscribe("bedroom/rgb1/light/switch");
+}
+
 void setup()
 {
     Serial.begin(9600);
     connectToWiFi();
     setup_routing();
-
+    connectToMqttServer();
     ArduinoOTA.begin();
 }
 
 void loop()
 {
     server.handleClient();
+    client.loop();
     ArduinoOTA.handle();
 }
