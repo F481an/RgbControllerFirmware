@@ -160,16 +160,46 @@ void setup_routing()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-    Serial.print("Message arrived in topic: ");
-    Serial.println(topic);
 
-    Serial.print("Message:");
+    String topicextract = topic;
+    int pos = topicextract.lastIndexOf("/") + 1;
+    topicextract = topicextract.substring(pos, topicextract.length());
+
+    Serial.println(topicextract);
+
+    String payloadextract = "";
     for (int i = 0; i < length; i++)
     {
-        Serial.print((char)payload[i]);
+        payloadextract += (char)payload[i];
     }
 
-    Serial.println();
+    if (topicextract.equals("switch"))
+    {
+        if (payloadextract.equals("ON"))
+        {
+            Strip1.turnOffOn(true);
+        }
+        if (payloadextract.equals("OFF"))
+        {
+            Strip1.turnOffOn(false);
+        }
+    }
+    else if (topicextract.equals("brightness"))
+    {
+        // Strip1.setBrightness(payloadextract.toInt());
+    }
+    else if (topicextract.equals("rgb"))
+    {
+        byte r = payloadextract.substring(0, payloadextract.indexOf(',')).toInt();
+        byte g = payloadextract.substring(payloadextract.indexOf(',') + 1, payloadextract.lastIndexOf(',')).toInt();
+        byte b = payloadextract.substring(payloadextract.lastIndexOf(',') + 1, payloadextract.length()).toInt();
+        Strip1.setColorFill(r, g, b);
+    }
+
+    Serial.print("Topic: ");
+    Serial.println(topicextract);
+    Serial.println("Message: ");
+    Serial.println(payloadextract);
 }
 
 void connectToMqttServer()
@@ -193,8 +223,9 @@ void connectToMqttServer()
         }
     }
 
-    client.publish("esp/test", "hello"); // Topic name
-    client.subscribe("bedroom/rgb1/light/switch");
+    client.subscribe("bedroom/UnderBedLight/switch");
+    client.subscribe("bedroom/UnderBedLight/brightness");
+    client.subscribe("bedroom/UnderBedLight/rgb");
 }
 
 void setup()

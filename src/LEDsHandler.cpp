@@ -3,6 +3,7 @@
 class LedStrip
 {
     Adafruit_NeoPixel Strip;
+    byte brightness = 0;
     byte red = 0;
     byte green = 0;
     byte blue = 0;
@@ -33,6 +34,13 @@ public:
     {
         mode = me;
         speed = sd;
+    }
+
+
+    void setBrightness(bool br)
+    {
+        brightness = br;
+        Strip.setBrightness(brightness);
     }
 
     void turnOffOn(bool st)
