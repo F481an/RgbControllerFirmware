@@ -7,8 +7,6 @@ class LedStrip
     byte red = 0;
     byte green = 0;
     byte blue = 0;
-    byte mode = 0;
-    byte speed = 0;
     bool state = false;
 
 public:
@@ -30,14 +28,7 @@ public:
         Strip.show();
     }
 
-    void setSpecialMode(byte me, byte sd)
-    {
-        mode = me;
-        speed = sd;
-    }
-
-
-    void setBrightness(bool br)
+    void setBrightness(byte br)
     {
         brightness = br;
         Strip.setBrightness(brightness);
@@ -70,16 +61,12 @@ public:
     {
         return blue;
     }
-    byte getMode()
-    {
-        return mode;
-    }
-    byte getSpeed()
-    {
-        return speed;
-    }
     bool getState()
     {
         return state;
+    }
+    byte getBrightness()
+    {
+        return brightness;
     }
 };

@@ -94,16 +94,6 @@ void setStrip1()
     Strip1.setColorFill(red, green, blue);
     server.send(200, "application/json", "{}");
 }
-void setStrip1SpecialMode()
-{
-    String body = server.arg("plain");
-    deserializeJson(jsonDocument, body);
-    byte mode = jsonDocument["mode"];
-    byte speed = jsonDocument["speed"];
-
-    Strip1.setSpecialMode(mode, speed);
-    server.send(200, "application/json", "{}");
-}
 void setStrip1OffOn()
 {
     String body = server.arg("plain");
@@ -113,15 +103,22 @@ void setStrip1OffOn()
     Strip1.turnOffOn(state);
     server.send(200, "application/json", "{}");
 }
+void setbrightness()
+{
+    String body = server.arg("plain");
+    deserializeJson(jsonDocument, body);
+    byte brightness = jsonDocument["brightness"];
 
+    Strip1.setBrightness(brightness);
+    server.send(200, "application/json", "{}");
+}
 void getStrip1()
 {
     jsonDocument.clear();
     jsonDocument["red"] = Strip1.getRed();
     jsonDocument["green"] = Strip1.getGreen();
     jsonDocument["blue"] = Strip1.getBlue();
-    jsonDocument["mode"] = Strip1.getMode();
-    jsonDocument["speed"] = Strip1.getSpeed();
+    jsonDocument["brightness"] = Strip1.getBrightness();
     jsonDocument["state"] = Strip1.getState();
 
     serializeJson(jsonDocument, buffer);
@@ -150,8 +147,8 @@ void getDevideData()
 void setup_routing()
 {
     server.on("/Strip1/color", HTTP_POST, setStrip1);
-    server.on("/Strip1/SpecialMode", HTTP_POST, setStrip1SpecialMode);
     server.on("/Strip1/OffOn", HTTP_POST, setStrip1OffOn);
+    server.on("/Strip1/brightness", HTTP_POST, setbrightness);
     server.on("/Strip1", HTTP_GET, getStrip1);
     server.on("/DevideData", HTTP_POST, setDevideData);
     server.on("/DevideData", HTTP_GET, getDevideData);
@@ -160,14 +157,11 @@ void setup_routing()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-
     String topicextract = topic;
+    String payloadextract = "";
     int pos = topicextract.lastIndexOf("/") + 1;
     topicextract = topicextract.substring(pos, topicextract.length());
 
-    Serial.println(topicextract);
-
-    String payloadextract = "";
     for (int i = 0; i < length; i++)
     {
         payloadextract += (char)payload[i];
@@ -179,14 +173,14 @@ void callback(char *topic, byte *payload, unsigned int length)
         {
             Strip1.turnOffOn(true);
         }
-        if (payloadextract.equals("OFF"))
+        else if (payloadextract.equals("OFF"))
         {
             Strip1.turnOffOn(false);
         }
     }
     else if (topicextract.equals("brightness"))
     {
-        // Strip1.setBrightness(payloadextract.toInt());
+        Strip1.setBrightness((byte)payloadextract.toInt());
     }
     else if (topicextract.equals("rgb"))
     {
@@ -198,7 +192,7 @@ void callback(char *topic, byte *payload, unsigned int length)
 
     Serial.print("Topic: ");
     Serial.println(topicextract);
-    Serial.println("Message: ");
+    Serial.print("Message: ");
     Serial.println(payloadextract);
 }
 
