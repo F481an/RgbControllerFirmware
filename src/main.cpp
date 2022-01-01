@@ -205,7 +205,7 @@ void connectToMqttServer()
     {
         Serial.println("Connecting to MQTT...");
 
-        if (client.connect("ESP8266Client", mqttUser, mqttPassword))
+        if (client.connect("UnderBedLightController", mqttUser, mqttPassword))
         {
             Serial.println("connected");
         }
@@ -233,6 +233,10 @@ void setup()
 
 void loop()
 {
+    if (!client.connected())
+    {
+        connectToMqttServer();
+    }
     server.handleClient();
     client.loop();
     ArduinoOTA.handle();
