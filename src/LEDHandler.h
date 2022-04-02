@@ -9,6 +9,7 @@ class LedStrip
     byte green = 0;
     byte blue = 0;
     bool state = false;
+    bool updated = false;
 
 public:
     LedStrip(byte NUM_LEDS, byte LED_PIN)
@@ -17,6 +18,7 @@ public:
         Strip.begin();
         Strip.fill(Strip.Color(0, 0, 0));
         Strip.show();
+        updated = true;
     }
 
     void setColorFill(byte r, byte g, byte b)
@@ -27,12 +29,14 @@ public:
         state = true;
         Strip.fill(Strip.Color(red, green, blue));
         Strip.show();
+        updated = true;
     }
 
     void setBrightness(byte br)
     {
         brightness = br;
         Strip.setBrightness(brightness);
+        updated = true;
     }
 
     void turnOffOn(bool st)
@@ -48,6 +52,7 @@ public:
             Strip.fill(Strip.Color(0, 0, 0));
             Strip.show();
         }
+        updated = true;
     }
 
     byte getRed()
@@ -69,5 +74,13 @@ public:
     byte getBrightness()
     {
         return brightness;
+    }
+    bool getUpdated()
+    {
+        return updated;
+    }
+    void setUpdated(bool up)
+    {
+        updated = up;
     }
 };

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <LEDsHandler.h>
+#include <LEDHandler.h>
 
 #define LED_PIN1 2
 #define LED_PIN2 0
