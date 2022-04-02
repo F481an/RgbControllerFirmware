@@ -1,12 +1,10 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
-#include <WiFiUdp.h>
 #include <defines.h>
 
 
 ESP8266WebServer server(80);
-WiFiClient espClient;
 StaticJsonDocument<384> jsonDocument;
 char buffer[384];
 

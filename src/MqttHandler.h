@@ -2,11 +2,15 @@
 #include <PubSubClient.h>
 #include <WifiHandler.h>
 
+unsigned long UpdateTimeing = 5000;
+unsigned long UpdateTimeLast = 0;
+
 // MQTT Broker
 const char *mqttServer = "192.168.188.103";
 const int mqttPort = 1883;
 const char *mqttUser = "";
 const char *mqttPassword = "";
+WiFiClient espClient;
 PubSubClient client(espClient);
 
 void callback(char *topic, byte *payload, unsigned int length)
@@ -43,11 +47,6 @@ void callback(char *topic, byte *payload, unsigned int length)
         byte b = payloadextract.substring(payloadextract.lastIndexOf(',') + 1, payloadextract.length()).toInt();
         Strip.setColorFill(r, g, b);
     }
-
-    Serial.print("Topic: ");
-    Serial.println(topicextract);
-    Serial.print("Message: ");
-    Serial.println(payloadextract);
 }
 
 void connectToMqttServer()
@@ -71,9 +70,9 @@ void connectToMqttServer()
         }
     }
 
-    client.subscribe("bedroom/UnderBedLight/switch");
-    client.subscribe("bedroom/UnderBedLight/brightness");
-    client.subscribe("bedroom/UnderBedLight/rgb");
+    client.subscribe(ONOFTopic);
+    client.subscribe(BrightnessTopic);
+    client.subscribe(rgbTopic);
 }
 
 void MqttHandle()
@@ -83,4 +82,37 @@ void MqttHandle()
         connectToMqttServer();
     }
     client.loop();
+
+    if (millis() - UpdateTimeLast > UpdateTimeing)
+    {
+        UpdateTimeLast = millis();
+        if (Strip.getState())
+        {
+            client.publish(ONOFTopic, "ON");
+        }
+        else
+        {
+            client.publish(ONOFTopic, "OFF");
+        }
+
+        client.beginPublish(BrightnessTopic, 3, true);
+        client.write((Strip.getBrightness() / 100 % 10) + 48);
+        client.write((Strip.getBrightness() / 10 % 10) + 48);
+        client.write((Strip.getBrightness() % 10) + 48);
+        client.endPublish();
+
+        client.beginPublish(rgbTopic, 11, true);
+        client.write((Strip.getRed() / 100 % 10) + 48);
+        client.write((Strip.getRed() / 10 % 10) + 48);
+        client.write((Strip.getRed() % 10) + 48);
+        client.write(44);
+        client.write((Strip.getGreen() / 100 % 10) + 48);
+        client.write((Strip.getGreen() / 10 % 10) + 48);
+        client.write((Strip.getGreen() % 10) + 48);
+        client.write(44);
+        client.write((Strip.getBlue() / 100 % 10) + 48);
+        client.write((Strip.getBlue() / 10 % 10) + 48);
+        client.write((Strip.getBlue() % 10) + 48);
+        client.endPublish();
+    }
 }
