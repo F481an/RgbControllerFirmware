@@ -6,9 +6,14 @@
 #define NUM_LEDS1 36
 #define NUM_LEDS2 0
 #define LED_TYPE WS2812B
-#define ONOFTopic "bedroom/UnderBedLight/switch"
-#define BrightnessTopic "bedroom/UnderBedLight/brightness"
-#define rgbTopic "bedroom/UnderBedLight/rgb"
+
+#define statusTopic "bedroom/UnderBedLight/light/set"
+#define BrightnessTopic "bedroom/UnderBedLight/brightness/set"
+#define rgbTopic "bedroom/UnderBedLight/rgb/set"
+
+#define statusResponseTopic "bedroom/UnderBedLight/light/status"
+#define BrightnessResponseTopic "bedroom/UnderBedLight/brightness/status"
+#define rgbResponseTopic "bedroom/UnderBedLight/rgb/status"
 
 const char SSID[] = "Klaffenboeck_Wifi";
 const char PWD[] = "31862025034211431218";

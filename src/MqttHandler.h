@@ -13,20 +13,51 @@ const char *mqttPassword = "";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+void PublishStatus()
+{
+    if (Strip.getState())
+    {
+        client.publish(statusResponseTopic, "ON");
+    }
+    else
+    {
+        client.publish(statusResponseTopic, "OFF");
+    }
+
+    client.beginPublish(BrightnessResponseTopic, 3, true);
+    client.write((Strip.getBrightness() / 100 % 10) + 48);
+    client.write((Strip.getBrightness() / 10 % 10) + 48);
+    client.write((Strip.getBrightness() % 10) + 48);
+    client.endPublish();
+
+    client.beginPublish(rgbResponseTopic, 11, true);
+    client.write((Strip.getRed() / 100 % 10) + 48);
+    client.write((Strip.getRed() / 10 % 10) + 48);
+    client.write((Strip.getRed() % 10) + 48);
+    client.write(44);
+    client.write((Strip.getGreen() / 100 % 10) + 48);
+    client.write((Strip.getGreen() / 10 % 10) + 48);
+    client.write((Strip.getGreen() % 10) + 48);
+    client.write(44);
+    client.write((Strip.getBlue() / 100 % 10) + 48);
+    client.write((Strip.getBlue() / 10 % 10) + 48);
+    client.write((Strip.getBlue() % 10) + 48);
+    client.endPublish();
+}
+
 void callback(char *topic, byte *payload, unsigned int length)
 {
     String topicextract = topic;
     String payloadextract = "";
-    int pos = topicextract.lastIndexOf("/") + 1;
-    topicextract = topicextract.substring(pos, topicextract.length());
 
     for (int i = 0; i < length; i++)
     {
         payloadextract += (char)payload[i];
     }
 
-    if (topicextract.equals("switch"))
+    if (topicextract.equals(statusTopic))
     {
+
         if (payloadextract.equals("ON"))
         {
             Strip.turnOffOn(true);
@@ -36,17 +67,18 @@ void callback(char *topic, byte *payload, unsigned int length)
             Strip.turnOffOn(false);
         }
     }
-    else if (topicextract.equals("brightness"))
+    else if (topicextract.equals(BrightnessTopic))
     {
         Strip.setBrightness((byte)payloadextract.toInt());
     }
-    else if (topicextract.equals("rgb"))
+    else if (topicextract.equals(rgbTopic))
     {
         byte r = payloadextract.substring(0, payloadextract.indexOf(',')).toInt();
         byte g = payloadextract.substring(payloadextract.indexOf(',') + 1, payloadextract.lastIndexOf(',')).toInt();
         byte b = payloadextract.substring(payloadextract.lastIndexOf(',') + 1, payloadextract.length()).toInt();
         Strip.setColorFill(r, g, b);
     }
+    PublishStatus();
 }
 
 void connectToMqttServer()
@@ -70,7 +102,7 @@ void connectToMqttServer()
         }
     }
 
-    client.subscribe(ONOFTopic);
+    client.subscribe(statusTopic);
     client.subscribe(BrightnessTopic);
     client.subscribe(rgbTopic);
 }
@@ -86,33 +118,6 @@ void MqttHandle()
     if (millis() - UpdateTimeLast > UpdateTimeing)
     {
         UpdateTimeLast = millis();
-        if (Strip.getState())
-        {
-            client.publish(ONOFTopic, "ON");
-        }
-        else
-        {
-            client.publish(ONOFTopic, "OFF");
-        }
-
-        client.beginPublish(BrightnessTopic, 3, true);
-        client.write((Strip.getBrightness() / 100 % 10) + 48);
-        client.write((Strip.getBrightness() / 10 % 10) + 48);
-        client.write((Strip.getBrightness() % 10) + 48);
-        client.endPublish();
-
-        client.beginPublish(rgbTopic, 11, true);
-        client.write((Strip.getRed() / 100 % 10) + 48);
-        client.write((Strip.getRed() / 10 % 10) + 48);
-        client.write((Strip.getRed() % 10) + 48);
-        client.write(44);
-        client.write((Strip.getGreen() / 100 % 10) + 48);
-        client.write((Strip.getGreen() / 10 % 10) + 48);
-        client.write((Strip.getGreen() % 10) + 48);
-        client.write(44);
-        client.write((Strip.getBlue() / 100 % 10) + 48);
-        client.write((Strip.getBlue() / 10 % 10) + 48);
-        client.write((Strip.getBlue() % 10) + 48);
-        client.endPublish();
+        PublishStatus();
     }
 }
