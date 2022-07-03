@@ -2,11 +2,13 @@
 #include <PubSubClient.h>
 #include <WifiHandler.h>
 
+#define emergCuttofTime 30000
+
 unsigned long UpdateTimeing = 5000;
 unsigned long UpdateTimeLast = 0;
 
 // MQTT Broker
-const char *mqttServer = "192.168.188.103";
+const char *mqttServer = "192.168.188.102";
 const int mqttPort = 1883;
 const char *mqttUser = "";
 const char *mqttPassword = "";
@@ -81,8 +83,10 @@ void callback(char *topic, byte *payload, unsigned int length)
     PublishStatus();
 }
 
-void connectToMqttServer()
+bool connectToMqttServer()
 {
+    unsigned long ConnTryStartTime = millis();
+
     client.setServer(mqttServer, mqttPort);
     client.setCallback(callback);
 
@@ -98,13 +102,18 @@ void connectToMqttServer()
         {
             Serial.print("failed with state ");
             Serial.print(client.state());
-            delay(2000);
+            delay(1000);
+        }
+        if (millis() - ConnTryStartTime > emergCuttofTime)
+        {
+            return false;
         }
     }
 
     client.subscribe(statusTopic);
     client.subscribe(BrightnessTopic);
     client.subscribe(rgbTopic);
+    return true;
 }
 
 void MqttHandle()

@@ -28,12 +28,18 @@ void publischCurrantState() {}
 
 void setup()
 {
+    ArduinoOTA.begin();
     Serial.begin(9600);
     EEPROM.begin(12);
     connectToWiFi();
     setup_routing();
-    connectToMqttServer();
-    ArduinoOTA.begin();
+    if (!connectToMqttServer())
+    {
+        while (true)
+        {
+            ArduinoOTA.handle();
+        }
+    }
 
     byte red = EEPROM.read(RedAddr);
     byte green = EEPROM.read(GreenAddr);
