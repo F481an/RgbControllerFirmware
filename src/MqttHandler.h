@@ -8,7 +8,7 @@ unsigned long UpdateTimeing = 5000;
 unsigned long UpdateTimeLast = 0;
 
 // MQTT Broker
-const char *mqttServer = "192.168.188.102";
+const char *mqttServer = "mqtt01.klaffenboeck.eu";
 const int mqttPort = 1883;
 const char *mqttUser = "";
 const char *mqttPassword = "";
