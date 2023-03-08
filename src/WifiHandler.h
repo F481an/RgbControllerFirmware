@@ -4,7 +4,7 @@
 IPAddress local_IP(192, 168, 188, 130);
 IPAddress gateway(192, 168, 188, 1);
 IPAddress subnet(255, 255, 255, 0);
-IPAddress primaryDNS(192, 168, 188, 101);
+IPAddress primaryDNS(192, 168, 188, 102);
 
 void connectToWiFi()
 {
